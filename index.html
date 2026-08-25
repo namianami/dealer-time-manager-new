@@ -1,0 +1,96 @@
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ディーラー管理">
+<title>ディーラー時間管理</title>
+<style>
+:root{--bg:#111;--card:#1d1d1f;--sub:#292929;--text:#eee;--muted:#999;--a:#00adb5;--ok:#2a9d8f;--w:#ffb703;--d:#e63946}
+*{box-sizing:border-box}body{margin:0;padding:calc(12px + env(safe-area-inset-top)) 12px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,sans-serif}main{max-width:720px;margin:auto}
+h1{text-align:center;color:var(--a);font-size:21px}h2{font-size:17px}section{background:var(--card);padding:14px;margin:12px 0;border-radius:13px}
+.row{display:flex;gap:8px}.field{flex:1;margin-bottom:8px}label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+input,select,button{width:100%;min-height:45px;border-radius:8px;border:1px solid #444;background:var(--sub);color:#fff;padding:9px;font-size:16px}button{background:var(--a);border:0;font-weight:700}.gray{background:#555}.red{background:var(--d)}.green{background:var(--ok)}
+.note{font-size:11px;color:var(--muted);line-height:1.5}.cards{display:flex;flex-direction:column;gap:9px}.card{background:var(--sub);padding:12px;border-radius:10px;border-left:6px solid #555}.active{border-left-color:var(--ok)}.warn{border-left-color:var(--w);box-shadow:0 0 0 1px var(--w)}.danger{border-left-color:var(--d);box-shadow:0 0 0 1px var(--d)}
+.head{display:flex;justify-content:space-between}.name{font-weight:700;font-size:17px}.badge{font-size:11px;background:#555;padding:4px 7px;border-radius:5px}.timerrow{display:flex;justify-content:space-between;align-items:end;margin:11px 0 4px}.timer{font:700 29px monospace}.worktotal{font:700 31px monospace;color:#00adb5;margin:-3px 0 9px}.small{font-size:11px;color:var(--muted);text-align:right;margin-bottom:8px}.actions{display:flex;gap:7px}.actions>*{flex:1}.actions .remove{flex:0 0 55px}.empty{text-align:center;color:var(--muted)}.tabs{display:flex;gap:7px}.tabs button.active{background:var(--a)}.tabs button{background:#555}.hidden{display:none}.slot{background:var(--sub);padding:10px;border-radius:9px;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.pill{display:inline-block;background:#333;padding:5px 7px;border-radius:6px;font-size:12px;margin:2px}
+.tablegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tablebox{background:var(--sub);padding:9px;border-radius:9px}.tablebox b{color:var(--a)}
+@media(min-width:600px){.grid,.tablegrid{grid-template-columns:repeat(3,1fr)}}
+</style></head><body><main>
+<h1>♠️ ディーラー時間管理 ♥️</h1>
+<section><h2>⚙️ 基本設定</h2><div class="row">
+<div class="field"><label>稼働卓数</label><input id="tables" type="number" min="1" max="12" value="2"></div>
+<div class="field"><label>交代時間（分）</label><input id="rotate" type="number" min="1" max="240" value="60"></div></div>
+<div class="row"><div class="field"><label>ディーラー名</label><input id="name" placeholder="例：山田" autocomplete="off"></div>
+<div class="field"><label>ランク</label><select id="rank"><option>A</option><option>B</option><option>C</option></select></div></div>
+<button id="add">ディーラーを登録</button><p class="note">交代時間は自動交代ではなく警告基準です。10分前→注意、5分前→強調、到達→交代時期。</p></section>
+<section><h2>🟢 現在の稼働状況</h2><div id="tablesView" class="tablegrid"></div><hr><div id="list" class="cards"></div></section>
+<section><h2>📅 今日のシフト</h2><div class="tabs"><button id="editTab" class="active">シフト設定</button><button id="viewTab">現在の予定</button></div>
+<div id="edit"></div><button id="addSlot" class="green">＋ 時間枠を追加</button><div id="view" class="hidden"></div>
+<p class="note">シフトは自動予測しません。時間ごとのT1/T2…を手動で指定します。休憩は、その時間枠で卓に指定されていない登録者として表示します。</p></section>
+<section><h2>🧹 データ管理</h2><button id="reset" class="red">保存データをすべて削除</button><p class="note">ディーラー、シフト、設定、実績をこの端末から削除します。</p></section>
+</main>
+<script>
+"use strict";
+var KEY="dealer_manager_final_v4",S={tables:2,rotate:60,dealers:[],slots:[]};
+function $(x){return document.getElementById(x)} function newid(){return Date.now()+"_"+Math.random().toString(36).slice(2)}
+function esc(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function now(){return Date.now()} function fmt(x){x=Math.max(0,Math.floor(x||0));var h=Math.floor(x/3600),m=Math.floor(x%3600/60),s=x%60;return (h?String(h).padStart(2,"0")+":":"")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{var x=JSON.parse(localStorage.getItem(KEY)||"null");if(!x)return;S.tables=Math.max(1,parseInt(x.tables)||2);S.rotate=Math.max(1,parseInt(x.rotate)||60);S.dealers=Array.isArray(x.dealers)?x.dealers:[];S.slots=Array.isArray(x.slots)?x.slots:[]}catch(e){}}
+function get(id){return S.dealers.find(function(d){return d.id===id})}function tableName(i){return String.fromCharCode(65+i)}
+function work(d){return d.status==="active"?d.workTotal+(now()-d.started)/1000:d.workTotal}
+function rest(d){return d.status==="break"?d.restTotal+(now()-d.restStarted)/1000:d.restTotal}
+function add(){var n=$("name").value.trim();if(!n)return;S.dealers.push({id:newid(),name:n,rank:$("rank").value,status:"break",table:"",started:0,restStarted:now(),workTotal:0,restTotal:0});$("name").value="";render();save()}
+function toTable(id,t){if(!t)return;var d=get(id),q=S.dealers.find(function(x){return x.id!==id&&x.status==="active"&&x.table===t}),n=now();if(q){q.workTotal=work(q);q.status="break";q.table="";q.started=0;q.restStarted=n}d.restTotal=rest(d);d.status="active";d.table=t;d.started=n;d.restStarted=0;render();save()}
+function toBreak(id){var d=get(id);d.workTotal=work(d);d.status="break";d.table="";d.started=0;d.restStarted=now();render();save()}
+function removeD(id){
+  var d=get(id); if(!d)return;
+  S.dealers=S.dealers.filter(function(x){return x.id!==id});
+  S.slots.forEach(function(slot){slot.tables=slot.tables.map(function(v){return v===id?"":v})});
+  save(); render();
+}
+function cls(sec){var lim=S.rotate*60;return sec>=lim?"danger":sec>=lim-300?"danger":sec>=lim-600?"warn":""}
+function warn(sec){var lim=S.rotate*60;if(sec>=lim)return"🔴 交代時期";if(sec>=lim-300)return"🟠 あと"+Math.ceil((lim-sec)/60)+"分";if(sec>=lim-600)return"🟡 あと"+Math.ceil((lim-sec)/60)+"分";return""}
+function renderCards(){var L=$("list");L.innerHTML="";if(!S.dealers.length){L.innerHTML='<div class="empty">ディーラー未登録</div>';return}
+S.dealers.slice().sort(function(a,b){return (b.status==="active")-(a.status==="active")}).forEach(function(d){var a=d.status==="active",sec=a?work(d):rest(d),c=document.createElement("div");c.className="card "+(a?"active ":"")+cls(sec);c.dataset.id=d.id;
+var o='<option value="">卓選択</option>';for(var i=1;i<=S.tables;i++){var t=tableName(i-1);o+='<option value="'+t+'" '+(d.table===t?"selected":"")+'>'+t+"</option>"}
+c.innerHTML='<div class="head"><div class="name">'+esc(d.name)+' <span style="font-size:11px;color:#aaa">[ランク'+esc(d.rank)+"]</span></div><div class=badge>"+(a?"巻中("+esc(d.table)+")":"休憩")+"</div></div>"+
+'<div class=timerrow><span class=title style="font-size:12px;color:#999">'+(a?"現在の巻き時間":"現在の休憩時間")+'</span><span class=timer>'+fmt(sec)+'</span></div>'+
+'<div class=small>本日巻き累計</div><div class="worktotal">'+fmt(d.workTotal+(a?Math.max(0,(now()-d.started)/1000):0))+'</div>'+
+'<div class=warning style="font-size:12px;color:#ffb703;margin-bottom:7px">'+(a?warn(sec):"休憩中")+'</div>'+
+'<div class=actions>'+(a?'<button class=gray>☕ 休憩へ</button>':'<select class=sel>'+o+"</select>")+'<button class="red remove">✕</button></div>';
+if(a)c.querySelector(".gray").onclick=function(){toBreak(d.id)};else c.querySelector(".sel").onchange=function(e){toTable(d.id,e.target.value)};c.querySelector(".remove").onclick=function(e){if(e)e.stopPropagation();removeD(d.id)};L.appendChild(c)})}
+function live(){S.dealers.forEach(function(d){var c=document.querySelector('.card[data-id="'+d.id+'"]');if(!c)return;var a=d.status==="active",sec=a?work(d):rest(d);c.className="card "+(a?"active ":"")+cls(sec);c.querySelector(".timer").textContent=fmt(sec);c.querySelector(".title").textContent=a?"現在の巻き時間":"現在の休憩時間";c.querySelector(".warning").textContent=a?warn(sec):"休憩中";c.querySelector(".worktotal").textContent=fmt(d.workTotal+(a?Math.max(0,(now()-d.started)/1000):0))});renderTables()}
+function renderTables(){var x=$("tablesView");x.innerHTML="";for(var i=1;i<=S.tables;i++){var t=tableName(i-1),d=S.dealers.find(function(q){return q.status==="active"&&q.table===t}),e=document.createElement("div");e.className="tablebox";e.innerHTML="<b>"+t+"</b><div>"+(d?esc(d.name):"空き")+"</div>"+(d?"<div>"+fmt(work(d))+"</div>":"");x.appendChild(e)}}
+function addSlot(){S.slots.push({id:newid(),time:"",tables:Array(S.tables).fill("")});renderSchedule();save()}
+function scheduleEdit(){var x=$("edit");x.innerHTML="";if(!S.slots.length){x.innerHTML='<div class=empty>時間枠がありません</div>';return}S.slots.sort(function(a,b){return a.time.localeCompare(b.time)});S.slots.forEach(function(s){while(s.tables.length<S.tables)s.tables.push("");var r=document.createElement("div");r.className="slot";var g='<div class=grid>';for(var i=0;i<S.tables;i++){var o='<option value="">未設定</option>';S.dealers.forEach(function(d){o+='<option value="'+d.id+'" '+(s.tables[i]===d.id?"selected":"")+'>'+esc(d.name)+"</option>"});g+='<label>'+tableName(i)+'<select data-i="'+i+'">'+o+"</select></label>"}g+="</div>";r.innerHTML='<div class=row><input type=time class=time value="'+esc(s.time)+'"><button class=red style="max-width:70px">削除</button></div>'+g;r.querySelector(".time").onchange=function(e){s.time=e.target.value;S.slots.sort(function(a,b){return a.time.localeCompare(b.time)});renderSchedule();save()};r.querySelector("button").onclick=function(){S.slots=S.slots.filter(function(z){return z.id!==s.id});renderSchedule();save()};r.querySelectorAll("select").forEach(function(q){q.onchange=function(e){s.tables[+e.target.dataset.i]=e.target.value;renderScheduleView();save()}});x.appendChild(r)})}
+function renderScheduleView(){var x=$("view");x.innerHTML="";S.slots.forEach(function(s){var used=[],r=document.createElement("div");r.className="slot";var h="<b style='color:#00adb5;font-size:18px'>"+(s.time||"未設定")+"</b><br>";for(var i=0;i<S.tables;i++){var d=get(s.tables[i]);h+='<span class=pill>'+tableName(i)+": "+(d?esc(d.name):"—")+"</span>";if(d)used.push(d.id)}var rest=S.dealers.filter(function(d){return used.indexOf(d.id)<0}).map(function(d){return esc(d.name)});h+="<div style='font-size:12px;color:#999;margin-top:5px'>休憩: "+(rest.length?rest.join("・"):"—")+"</div>";r.innerHTML=h;x.appendChild(r)})}
+function renderSchedule(){scheduleEdit();renderScheduleView()}
+$("add").onclick=add;$("name").onkeydown=function(e){if(e.key==="Enter")add()};$("tables").onchange=function(){S.tables=Math.max(1,Math.min(12,+this.value||1));S.slots.forEach(function(s){s.tables=s.tables.slice(0,S.tables);while(s.tables.length<S.tables)s.tables.push("")});render();save()};$("rotate").onchange=function(){S.rotate=Math.max(1,Math.min(240,+this.value||60));renderCards();save()};$("addSlot").onclick=addSlot;$("editTab").onclick=function(){$("edit").classList.remove("hidden");$("view").classList.add("hidden");$("editTab").classList.add("active");$("viewTab").classList.remove("active")};$("viewTab").onclick=function(){$("edit").classList.add("hidden");$("view").classList.remove("hidden");$("viewTab").classList.add("active");$("editTab").classList.remove("active");renderScheduleView()};var resetArmed=false,resetTimer=0;
+$("reset").onclick=function(){
+  var b=$("reset");
+  if(!resetArmed){
+    resetArmed=true;
+    b.textContent="⚠️ 本当に削除する（もう一度押す）";
+    b.style.background="#8b1e2d";
+    clearTimeout(resetTimer);
+    resetTimer=setTimeout(function(){
+      resetArmed=false;
+      b.textContent="保存データをすべて削除";
+      b.style.background="";
+    },5000);
+    return;
+  }
+  resetArmed=false;
+  clearTimeout(resetTimer);
+  S={tables:2,rotate:60,dealers:[],slots:[]};
+  try{
+    localStorage.removeItem(KEY);
+    localStorage.removeItem("dealer_time_manager_final_v1");
+    localStorage.removeItem("dealer_manager_final_v4");
+  }catch(e){}
+  b.textContent="保存データをすべて削除";
+  b.style.background="";
+  render();
+}
+function render(){sync();renderCards();renderTables();renderSchedule()}
+function sync(){$("tables").value=S.tables;$("rotate").value=S.rotate}
+load();render();setInterval(function(){live();save()},1000);
+</script></body></html>
