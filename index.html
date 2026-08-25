@@ -7,45 +7,44 @@
 <meta name="apple-mobile-web-app-title" content="ディーラー管理">
 <title>ディーラー時間管理</title>
 <style>
-:root{--bg:#111;--card:#1d1d1f;--sub:#292929;--text:#eee;--muted:#999;--a:#00adb5;--ok:#2a9d8f;--w:#ffb703;--d:#e63946}
+:root{--bg:#0d1117;--card:#1d1f22;--sub:#292b2e;--text:#f4f4f5;--muted:#a7a7aa;--a:#00b7c2;--ok:#2a9d8f;--w:#ffb000;--d:#ef3340}
 *{box-sizing:border-box}
-body{margin:0;padding:calc(12px + env(safe-area-inset-top)) 12px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,sans-serif}
-main{max-width:720px;margin:auto}
-h1{text-align:center;color:var(--a);font-size:21px}
-h2{font-size:17px}
-section{background:var(--card);padding:14px;margin:12px 0;border-radius:13px}
-.row{display:flex;gap:8px}
-.field{flex:1;margin-bottom:8px}
-label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
-input,select,button{width:100%;min-height:45px;border-radius:8px;border:1px solid #444;background:var(--sub);color:#fff;padding:9px;font-size:16px}
-button{background:var(--a);border:0;font-weight:700}
-.gray{background:#555}.red{background:var(--d)}.green{background:var(--ok)}
-.note{font-size:11px;color:var(--muted);line-height:1.5}
-.cards{display:flex;flex-direction:column;gap:9px}
-.card{background:var(--sub);padding:12px;border-radius:10px;border-left:6px solid #555}
-.active{border-left-color:var(--ok)}
-.warn{border-left-color:var(--w);box-shadow:0 0 0 1px var(--w)}
-.danger{border-left-color:var(--d);box-shadow:0 0 0 1px var(--d)}
-.head{display:flex;justify-content:space-between}
-.name{font-weight:700;font-size:17px}
-.badge{font-size:11px;background:#555;padding:4px 7px;border-radius:5px}
-.timerrow{display:flex;justify-content:space-between;align-items:end;margin:11px 0 4px}
-.timer{font:700 29px monospace}
-.worktotal{font:700 31px monospace;color:#00adb5;margin:-3px 0 9px}
-.small{font-size:11px;color:var(--muted);text-align:right;margin-bottom:8px}
-.actions{display:flex;gap:7px}.actions>*{flex:1}.actions .remove{flex:0 0 55px}
+body{margin:0;padding:calc(12px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+main{max-width:920px;margin:auto}
+h1{text-align:center;color:var(--a);font-size:25px;letter-spacing:.03em;margin:10px 0 18px}
+h2{font-size:19px;margin:0 0 14px}
+section{background:#1b1d20;padding:18px;margin:14px 0;border-radius:18px;border:1px solid #24272b}
+.row{display:flex;gap:10px}.field{flex:1;margin-bottom:10px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+input,select,button{width:100%;min-height:48px;border-radius:10px;border:1px solid #45474a;background:#292b2d;color:#fff;padding:10px 12px;font-size:16px}
+button{background:var(--a);border:0;font-weight:800}.gray{background:#5a5a5a}.red{background:var(--d)}.green{background:#2fa494}
+.note{font-size:12px;color:var(--muted);line-height:1.55}
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{background:#292a2c;padding:18px;border-radius:17px;border-left:7px solid #555;overflow:hidden}
+.card.active{border-left-color:var(--a)}
+.card.warn{border-left-color:var(--w);box-shadow:0 0 0 1px rgba(255,176,0,.55)}
+.card.danger{border-left-color:var(--d);box-shadow:0 0 0 1px rgba(239,51,64,.55)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}
+.name{font-weight:800;font-size:22px}.name span{font-size:13px!important;color:#aaa!important}
+.badge{font-size:14px;background:#5a5a5a;padding:8px 11px;border-radius:9px;white-space:nowrap}
+.timerrow{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin:0 0 20px}
+.timerrow .title{font-size:17px!important;color:#aaa!important;display:block;line-height:1.35}
+.timer{font:700 42px/1 monospace;color:var(--a);letter-spacing:-1px}
+.status-block{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.status-block .status-label{font-size:17px;color:#aaa;line-height:1.3}
+.status-block .status-time{font:700 42px/1 monospace;color:var(--a);letter-spacing:-1px}
+.daily-total{display:flex;flex-direction:column;align-items:flex-end;gap:3px;margin:0 0 20px}
+.daily-total .small{font-size:15px;color:#aaa;margin:0;text-align:right}
+.daily-total .worktotal{font:700 42px/1 monospace;color:var(--a);margin:0;letter-spacing:-1px}
+.warning{font-size:16px!important;margin:2px 0 14px!important;color:var(--w)!important;min-height:22px}
+.actions{display:flex;gap:10px;align-items:stretch}.actions>*{flex:1}.actions .remove{flex:0 0 64px;font-size:27px}
+.actions .sel{min-height:64px;font-size:20px;border-radius:14px;background:#292b2e}
+.actions .gray{min-height:64px;font-size:18px;border-radius:14px}
 .empty{text-align:center;color:var(--muted)}
-.tabs{display:flex;gap:7px}.tabs button.active{background:var(--a)}.tabs button{background:#555}
-.hidden{display:none}
-.slot{background:var(--sub);padding:10px;border-radius:9px;margin:8px 0}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
-.pill{display:inline-block;background:#333;padding:5px 7px;border-radius:6px;font-size:12px;margin:2px}
-.tablegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.tablebox{background:var(--sub);padding:9px;border-radius:9px}
-.tablebox b{color:var(--a)}
-.table-timer-label{font-size:11px;color:var(--muted);margin-top:8px}
-.table-timer{font:700 24px monospace;margin-top:2px}
+.tabs{display:flex;gap:8px}.tabs button.active{background:var(--a)}.tabs button{background:#555}
+.hidden{display:none}.slot{background:var(--sub);padding:12px;border-radius:11px;margin:9px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pill{display:inline-block;background:#333;padding:6px 8px;border-radius:7px;font-size:12px;margin:2px}.tablegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.tablebox{background:var(--sub);padding:11px;border-radius:10px}.tablebox b{color:var(--a)}.table-timer-label{font-size:12px;color:var(--muted);margin-top:8px}.table-timer{font:700 25px monospace;margin-top:2px;color:var(--a)}
 @media(min-width:600px){.grid,.tablegrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){body{padding-left:8px;padding-right:8px}section{padding:14px;border-radius:16px}.row{flex-direction:column;gap:0}.card{padding:16px}.head{margin-bottom:22px}.name{font-size:20px}.timer{font-size:36px}.status-block .status-time,.daily-total .worktotal{font-size:36px}.actions .remove{flex-basis:58px}.actions .sel{font-size:18px}}
 </style>
 </head>
 <body>
@@ -258,7 +257,7 @@ function toTable(id,t){
   /*
     ここが重要:
     dが卓についた瞬間に sessionStartedAt を必ず現在時刻へ更新。
-    dailyWorkTotal は変更しないので、累計と今回の巻き時間が混ざらない。
+    dailyWorkTotal は確定済みの巻き累計として保持し、現在の卓についてからの時間とは分けて管理する。
   */
   d.status="active";
   d.table=t;
@@ -274,7 +273,7 @@ function toBreak(id){
   if(!d)return;
   ensureToday(d);
 
-  /* 今回の巻き時間だけを累計へ確定 */
+  /* 現在の卓についてからの時間を、本日の累計へ確定 */
   d.dailyWorkTotal+=currentWork(d);
 
   d.status="break";
@@ -336,10 +335,10 @@ function renderCards(){
     }
 
     c.innerHTML=
-      '<div class="head"><div class="name">'+esc(d.name)+' <span style="font-size:11px;color:#aaa">[ランク'+esc(d.rank)+"]</span></div><div class=badge>"+(a?"巻中("+esc(d.table)+")":"休憩")+"</div></div>"+
-      '<div class=timerrow><span class=title style="font-size:12px;color:#999">'+(a?"今回の巻き時間":"現在の休憩時間")+'</span><span class=timer>'+fmt(sec)+'</span></div>'+
-      '<div class=small>本日巻き累計</div><div class="worktotal">'+fmt(dailyWork(d))+'</div>'+
-      '<div class=warning style="font-size:12px;color:#ffb703;margin-bottom:7px">'+(a?warn(sec):"休憩中")+'</div>'+
+      '<div class="head"><div class="name">'+esc(d.name)+' <span>[ランク'+esc(d.rank)+'</span></div><div class="badge">'+(a?'巻中('+esc(d.table)+')':'休憩')+'</div></div>'+
+      '<div class="timerrow"><div class="status-block"><div class="status-label">'+(a?"卓についてから":"現在の休憩時間")+'</div><div class="status-time timer">'+fmt(sec)+'</div></div>'+
+      '<div class="daily-total"><div class="small">本日巻き累計</div><div class="worktotal">'+fmt(dailyWork(d))+'</div></div></div>'+
+      '<div class="warning">'+(a?warn(sec):"休憩中")+'</div>'+
       '<div class="actions">'+(a?'<button class="gray">☕ 休憩へ</button>':'<select class="sel">'+o+'</select>')+'<button class="red remove">✕</button></div>';
 
     if(a){
@@ -375,7 +374,7 @@ function live(){
 
     c.className="card "+(a?"active ":"")+cls(sec);
     c.querySelector(".timer").textContent=fmt(sec);
-    c.querySelector(".title").textContent=a?"今回の巻き時間":"現在の休憩時間";
+    c.querySelector(".status-label").textContent=a?"卓についてから":"現在の休憩時間";
     c.querySelector(".warning").textContent=a?warn(sec):"休憩中";
     c.querySelector(".worktotal").textContent=fmt(dailyWork(d));
   });
@@ -601,7 +600,6 @@ render();
 
 /*
   1秒ごとに
-  - 今回の巻き時間
   - 本日巻き累計
   - 卓の稼働時間
   - 交代警告
