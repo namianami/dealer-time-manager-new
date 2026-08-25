@@ -340,7 +340,7 @@ function renderCards(){
       '<div class=timerrow><span class=title style="font-size:12px;color:#999">'+(a?"今回の巻き時間":"現在の休憩時間")+'</span><span class=timer>'+fmt(sec)+'</span></div>'+
       '<div class=small>本日巻き累計</div><div class="worktotal">'+fmt(dailyWork(d))+'</div>'+
       '<div class=warning style="font-size:12px;color:#ffb703;margin-bottom:7px">'+(a?warn(sec):"休憩中")+'</div>'+
-      '<div class=actions>'+(a?'<button class=gray>☕ 休憩へ</button>':'<select class=sel>'+o+"</select>")+'<button class="red remove">✕</button></div>";
+      '<div class="actions">'+(a?'<button class="gray">☕ 休憩へ</button>':'<select class="sel">'+o+'</select>')+'<button class="red remove">✕</button></div>';
 
     if(a){
       c.querySelector(".gray").onclick=function(){toBreak(d.id)};
