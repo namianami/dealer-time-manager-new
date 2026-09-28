@@ -42,10 +42,11 @@ button{background:var(--a);border:0;font-weight:800}.gray{background:#5a5a5a}.re
 .actions .gray{min-height:42px;font-size:18px;border-radius:10px}
 .empty{text-align:center;color:var(--muted)}
 .tabs{display:flex;gap:8px}.tabs button.active{background:var(--a)}.tabs button{background:#555}
-.hidden{display:none}.slot{background:var(--sub);padding:12px;border-radius:11px;margin:9px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pill{display:inline-block;background:#333;padding:6px 8px;border-radius:7px;font-size:12px;margin:2px}.tablegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.tablebox{background:var(--sub);padding:11px;border-radius:10px}.tablebox b{color:var(--a)}.table-timer-label{font-size:12px;color:var(--muted);margin-top:8px}.table-timer{font:700 25px monospace;margin-top:2px;color:var(--a)}
+.hidden{display:none}.slot{background:var(--sub);padding:12px;border-radius:11px;margin:9px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pill{display:inline-block;background:#333;padding:6px 8px;border-radius:7px;font-size:12px;margin:2px}.tablegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.tablebox{background:var(--sub);padding:11px;border-radius:10px}.tablebox b{color:var(--a)}
+.table-select{margin-top:8px;min-height:42px;font-size:15px}.table-timer-label{font-size:12px;color:var(--muted);margin-top:8px}.table-timer{font:700 25px monospace;margin-top:2px;color:var(--a)}
 @media(min-width:600px){.grid,.tablegrid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){body{padding-left:8px;padding-right:8px}section{padding:14px;border-radius:16px}.row{flex-direction:column;gap:0}.card{padding:8px 10px}.head{margin-bottom:8px}.name{font-size:20px}.timer{font-size:36px}.status-block .status-time,.daily-total .worktotal{font-size:36px}.actions .remove{flex-basis:42px}.actions .sel{font-size:18px}}
-</style>
+.delete-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}.delete-modal.show{display:flex}.delete-dialog{width:min(420px,100%);background:#1d1f22;border:1px solid #45474a;border-radius:18px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.5);text-align:center}.delete-dialog h3{margin:0 0 10px;font-size:20px}.delete-dialog p{margin:0 0 18px;color:#bbb;line-height:1.6}.delete-dialog .delete-actions{display:flex;gap:10px}.delete-dialog .delete-actions button{min-height:48px}</style>
 </head>
 <body>
 <main>
@@ -86,7 +87,7 @@ button{background:var(--a);border:0;font-weight:800}.gray{background:#5a5a5a}.re
 <button id="reset" class="red">保存データをすべて削除</button>
 <p class="note">ディーラー、シフト、設定、実績をこの端末から削除します。</p>
 </section>
-</main>
+<div id="deleteModal" class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle"><div class="delete-dialog"><h3 id="deleteTitle">ディーラーを削除しますか？</h3><p id="deleteMessage"></p><div class="delete-actions"><button id="deleteCancel" class="gray" type="button">キャンセル</button><button id="deleteOK" class="red" type="button">削除する</button></div></div></div></main>
 
 <script>
 "use strict";
@@ -309,6 +310,11 @@ function warn(sec){
   return"";
 }
 
+var deleteTargetId="";
+function openDeleteDialog(id){var d=get(id);if(!d)return;deleteTargetId=id;$("deleteMessage").textContent=d.name+"の登録情報とシフト設定から削除されます。";$("deleteModal").classList.add("show");}
+function closeDeleteDialog(){deleteTargetId="";$("deleteModal").classList.remove("show");}
+function confirmDelete(){var id=deleteTargetId;if(!id)return;closeDeleteDialog();removeD(id);}
+
 function renderCards(){
   var L=$("list");
   L.innerHTML="";
@@ -349,7 +355,7 @@ function renderCards(){
 
     c.querySelector(".remove").onclick=function(e){
       if(e)e.stopPropagation();
-      removeD(d.id);
+      openDeleteDialog(d.id);
     };
 
     L.appendChild(c);
@@ -379,7 +385,16 @@ function live(){
     c.querySelector(".worktotal").textContent=fmt(dailyWork(d));
   });
 
-  renderTables();
+  updateTableTimers();
+}
+
+function updateTableTimers(){
+  var x=$("tablesView");
+  x.querySelectorAll(".table-timer").forEach(function(el){
+    var id=el.getAttribute("data-dealer-id");
+    var d=get(id);
+    if(d && d.status==="active") el.textContent=fmt(currentWork(d));
+  });
 }
 
 function esc(x){
@@ -403,13 +418,22 @@ function renderTables(){
     var e=document.createElement("div");
     e.className="tablebox";
 
+    var opts='<option value="">次のディーラーを選択</option>';
+    S.dealers.filter(function(q){ return q.status!=="active" || q.table!==t; }).forEach(function(q){
+      opts+='<option value="'+esc(q.id)+'">'+esc(q.name)+'</option>';
+    });
     e.innerHTML=
       "<b>"+t+"</b>"+
       "<div>"+(d?esc(d.name):"空き")+"</div>"+
       (d?
-        '<div class="table-timer-label">卓についてから</div><div class="table-timer">'+fmt(currentWork(d))+"</div>":
-        "");
+        '<div class="table-timer-label">卓についてから</div><div class="table-timer" data-dealer-id="'+esc(d.id)+'">'+fmt(currentWork(d))+"</div>":
+        "")+
+      '<select class="table-select">'+opts+'</select>';
 
+    e.querySelector(".table-select").onchange=function(ev){
+      if(ev.target.value) toTable(ev.target.value,t);
+      ev.target.value="";
+    };
     x.appendChild(e);
   }
 }
@@ -511,6 +535,10 @@ function renderSchedule(){
 }
 
 $("add").onclick=add;
+$("deleteCancel").onclick=closeDeleteDialog;
+$("deleteOK").onclick=confirmDelete;
+$("deleteModal").onclick=function(e){if(e.target===this)closeDeleteDialog();};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("deleteModal").classList.contains("show"))closeDeleteDialog();});
 $("name").onkeydown=function(e){if(e.key==="Enter")add()};
 
 $("tables").onchange=function(){
@@ -609,6 +637,11 @@ setInterval(function(){
   live();
   save();
 },1000);
+window.addEventListener("pagehide",function(){ save(); });
+window.addEventListener("beforeunload",function(){ save(); });
+window.addEventListener("pageshow",function(){ load(); render(); });
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") save(); else { load(); render(); } });
+
 </script>
 </body>
 </html>
